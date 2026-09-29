@@ -1,0 +1,24 @@
+# MicroSpot Vision — dependencies
+# Must install identically on Windows (dev) and Raspberry Pi OS 64-bit (deploy).
+# Platform-conditional entries are marked; pip resolves the environment marker
+# automatically so `pip install -r requirements.txt` is the same command on both.
+
+PySide6==6.7.2
+opencv-python==4.10.0.84
+scikit-image==0.24.0
+numpy==1.26.4
+scipy==1.13.1
+pandas==2.2.2
+matplotlib==3.9.0
+SQLAlchemy==2.0.30
+pydantic==2.7.4
+pytest==8.2.2
+pytest-qt==4.4.0
+
+# Camera support — Linux/Raspberry Pi only. Not installable on Windows; the
+# import in app/acquisition/camera.py is guarded so the app still runs
+# without this package during Windows development.
+picamera2==0.3.20 ; sys_platform == "linux"
+
+# ML backend — added in Phase 14. Listed here only as a placeholder comment,
+# not installed yet: onnxruntime

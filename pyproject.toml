@@ -1,0 +1,13 @@
+[project]
+name = "microspot-vision"
+version = "1.0.0"
+description = "Offline Raspberry Pi desktop app for image-based microscopic spot detection and counting."
+requires-python = ">=3.11"
+readme = "README.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyside6"
+
+[tool.setuptools.packages.find]
+include = ["app*"]

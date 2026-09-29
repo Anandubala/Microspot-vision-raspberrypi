@@ -1,0 +1,17 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+data/original/
+data/processed/
+data/sessions/
+data/exports/
+data/reports/
+*.db
+.vscode/
+.idea/
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.DS_Store
