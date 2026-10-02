@@ -3,6 +3,13 @@
 Raspberry Pi OS 64-bit recommended (extra RAM headroom, better
 OpenCV/NumPy wheel availability than 32-bit).
 
+**Check your Python version first:** `python3 --version`. Current
+Raspberry Pi OS (Debian "trixie") ships **Python 3.13** by default. The
+pins in `requirements.txt` are chosen to install on Python 3.11–3.13 —
+if your Pi has something outside that range, the packages below may need
+bumping (check `pip index versions <package>` for what's available for
+your interpreter).
+
 ## 1. System packages
 
 PySide6/Qt and OpenCV need a few apt packages on Pi OS that aren't needed
@@ -39,9 +46,18 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-This installs `picamera2` here (it's `sys_platform == "linux"` in
-`requirements.txt`) even though Phase 1 doesn't use it yet — it's for
-Phase 15 (live camera capture).
+`picamera2` is deliberately **not** in `requirements.txt` — pip-installing
+it pulls in `python-prctl`, which has no prebuilt wheel and fails to build
+without the `libcap` system dev headers (confirmed by testing it, not
+assumed). It's also not needed until Phase 15 (live camera capture). When
+that phase arrives, install it the way Raspberry Pi OS actually supports:
+
+```bash
+sudo apt install -y python3-picamera2 --no-install-recommends
+```
+
+This also pulls in the matching `libcamera` system bindings, which pip
+has no way to provide at all.
 
 ## 5. Run
 

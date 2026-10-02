@@ -1,24 +1,30 @@
 # MicroSpot Vision — dependencies
 # Must install identically on Windows (dev) and Raspberry Pi OS 64-bit (deploy).
-# Platform-conditional entries are marked; pip resolves the environment marker
-# automatically so `pip install -r requirements.txt` is the same command on both.
+# Pinned to versions confirmed (2026-09) to ship official manylinux aarch64
+# wheels and support Python 3.11 through 3.13 — Raspberry Pi OS (Debian
+# "trixie") currently ships Python 3.13 by default, which is why the
+# original pins (built against the <3.13 PySide6/opencv/numpy line) failed
+# to install on the Pi with "Requires-Python" errors.
 
-PySide6>=6.7.2
-opencv-python==4.10.0.84
-scikit-image==0.24.0
-numpy==1.26.4
-scipy==1.13.1
-pandas==2.2.2
-matplotlib==3.9.0
-SQLAlchemy==2.0.30
-pydantic==2.7.4
-pytest==8.2.2
+PySide6==6.8.2
+opencv-python==4.11.0.86
+scikit-image==0.25.2
+numpy==2.1.3
+scipy==1.15.2
+pandas==2.2.3
+matplotlib==3.10.1
+SQLAlchemy==2.0.38
+pydantic==2.10.6
+pytest==8.3.4
 pytest-qt==4.4.0
 
-# Camera support — Linux/Raspberry Pi only. Not installable on Windows; the
-# import in app/acquisition/camera.py is guarded so the app still runs
-# without this package during Windows development.
-picamera2==0.3.20 ; sys_platform == "linux"
+# Camera support (Phase 15, not used yet) — deliberately NOT pip-installed.
+# picamera2 pulls in python-prctl, which has no prebuilt wheel and fails to
+# *build* from source without the libcap system dev headers (libcap-dev) —
+# confirmed by actually trying it, not assumed. On real Raspberry Pi OS the
+# correct install path is `sudo apt install python3-picamera2`, which pulls
+# in the matching libcamera system bindings pip can't provide anyway. When
+# Phase 15 implements PiCameraSource, install it that way (apt, not pip);
+# see docs/SETUP_RASPBERRY_PI.md.
 
-# ML backend — added in Phase 14. Listed here only as a placeholder comment,
-# not installed yet: onnxruntime
+# ML backend — added in Phase 14. Not installed yet: onnxruntime

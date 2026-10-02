@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 1 — dependency fix (2026-10-02)
+
+- `requirements.txt` pins were built on this container's Python 3.12 and
+  broke on the Pi's actual Python 3.13 (`PySide6==6.7.2` requires `<3.13`).
+  Re-pinned every dependency to versions confirmed via live PyPI data to
+  ship aarch64 wheels for cp313.
+- Removed `picamera2` from `requirements.txt` — its `python-prctl`
+  dependency fails to build without `libcap` system headers. Moved to an
+  apt-install instruction for Phase 15 in `docs/SETUP_RASPBERRY_PI.md`.
+- See `docs/PHASE_1.md` "Correction" section for the full account.
+
 ## Phase 1 — Project foundation (2026-09-29)
 
 - Repository structure created per master spec Section 15.

@@ -175,6 +175,36 @@ appear when running with a real display on Windows or the Pi.)
   best-effort based on known PySide6/Pi OS requirements and may need
   adjustment on your actual Pi OS version — NOT TESTED on real hardware.
 
+## Correction (2026-10-02)
+
+The original Phase 1 pins (`PySide6==6.7.2` and matching numpy/opencv/etc.
+versions) failed to install on the actual Raspberry Pi: its Python is
+3.13, and `PySide6==6.7.2`'s metadata requires `<3.13`. Re-verified every
+pin against live PyPI data and Raspberry Pi OS's actual Python version:
+
+- Bumped `PySide6` to `6.8.2` (`Requires-Python <3.14,>=3.9` — confirmed
+  via PyPI metadata) and every numpy/scipy/opencv/pandas/scikit-image/
+  SQLAlchemy/pydantic/pytest pin to versions confirmed to ship official
+  manylinux **aarch64** wheels for **cp313**, not just x86_64/cp312 —
+  checked file-by-file against PyPI's JSON API, not assumed.
+- Removed `picamera2` from `requirements.txt` entirely. Testing the
+  install (not just reading about it) showed its `python-prctl` dependency
+  has no prebuilt wheel and fails to *build* without the `libcap` system
+  dev headers — this would have broken the Pi install a second time right
+  after the PySide6 fix. It's unused in Phase 1 code anyway (guarded stub
+  only); `docs/SETUP_RASPBERRY_PI.md` now documents installing it via
+  `apt` in Phase 15 instead, which is also the only way to get the
+  matching `libcamera` bindings.
+- Re-ran the full test suite (same 8 tests) and the headless app smoke
+  test against the new pins in a clean virtualenv — both passed identically
+  to the original run; nothing in Phase 1's code depends on
+  numpy/opencv/pydantic APIs that changed between the old and new pins.
+- Still NOT verified: actual install and launch on your physical Pi. The
+  new pins are checked against live PyPI metadata for Python 3.13 +
+  aarch64 specifically (your reported environment), which is a much
+  stronger check than before, but I don't have your hardware to confirm
+  the apt packages in Section 1 are complete for your exact Pi OS image.
+
 ## Next phase
 
 Phase 2 — Image validation, metadata, SHA-256, image-quality engine

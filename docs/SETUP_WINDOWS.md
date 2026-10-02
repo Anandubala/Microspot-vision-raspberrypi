@@ -22,11 +22,11 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-`picamera2` will not install on Windows — this is expected. It's marked
-`sys_platform == "linux"` in `requirements.txt`, so pip skips it here and
-installs it only on the Raspberry Pi. Nothing in the app imports it at
+`picamera2` is not in `requirements.txt` at all (not just skipped on
+Windows) — see `docs/SETUP_RASPBERRY_PI.md` for why and how it'll be
+installed via apt when Phase 15 needs it. Nothing in the app imports it at
 module load time without a guard (see `app/acquisition/camera.py`), so the
-app runs fine without it.
+app runs fine without it on either machine.
 
 ## 4. Run
 
