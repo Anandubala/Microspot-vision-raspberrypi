@@ -29,6 +29,14 @@ The specific rule a candidate failed (e.g. `AREA_TOO_SMALL`,
 `LOW_CIRCULARITY`, `EDGE_EXCLUDED`) — always attached to a rejected
 candidate so a reviewer can audit why it didn't count.
 
+**Quality warning** (e.g. `BLURRY`, `LOW_CONTRAST`, `UNEVEN_ILLUMINATION`,
+`CLIPPED_DARK`, `CLIPPED_BRIGHT`)
+A named flag raised when a computed quality metric crosses its configured
+threshold (`QualityConfig`) — e.g. `BLURRY` means the image's Laplacian
+variance was below `blur_variance_min`. Not a judgment on the image's
+biological content; purely a signal that the detection pipeline (Phase 4
+onward) may be less reliable on this particular image.
+
 **What none of the above mean:** "microorganism," "colony," "CFU," or any
 biological diagnosis. The system performs image-based feature detection
 and quantification — nothing more is claimed unless a controlled

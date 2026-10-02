@@ -1,5 +1,25 @@
 # Changelog
 
+## Phase 2 — Image validation, metadata, SHA-256, quality engine (2026-10-02)
+
+- `app/acquisition/validation.py` — validates the decoded image array
+  (dtype, dimensions, channel count) before anything downstream touches it.
+- `app/utils/hashing.py` — streamed SHA-256 file hashing.
+- `app/acquisition/import_pipeline.py` — ties load -> validate -> hash ->
+  copy to `data/original/<hash>.<ext>` -> quality analysis into one
+  `import_image()` call; idempotent on re-import of the same file.
+- `app/image_engine/quality/metrics.py` — real, independently-tested
+  blur (Laplacian variance), contrast (std-dev), illumination uniformity
+  (grid coefficient of variation), and clipping-fraction computations.
+- `app/image_engine/quality/quality_analysis.py` — applies `QualityConfig`
+  thresholds to produce named warnings (`BLURRY`, `LOW_CONTRAST`,
+  `UNEVEN_ILLUMINATION`, `CLIPPED_DARK`, `CLIPPED_BRIGHT`).
+- `app/config/schemas.py` — added `ImportRecord`, `QualityConfig`,
+  `QualityMetrics`.
+- `app/gui/quality_panel.py` + `MainWindow` — displays the real computed
+  metrics and warnings under the image viewer after each load.
+- 32 new tests (40 total), all passing — see `docs/PHASE_2.md`.
+
 ## Phase 1 — dependency fix (2026-10-02)
 
 - `requirements.txt` pins were built on this container's Python 3.12 and
