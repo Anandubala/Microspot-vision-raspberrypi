@@ -13,12 +13,12 @@ and reports an image-derived count with full parameter provenance.
 *candidate / detected feature*, never automatically a microorganism, colony,
 or CFU. See [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 
-## Current feature set (Phase 2)
+## Current feature set (Phase 3)
 
 - PySide6 desktop app skeleton, runs identically on Windows (dev) and
   Raspberry Pi OS (deploy).
 - File > Open Image — loads a single image (JPG/JPEG/PNG/BMP/TIFF) via a
-  file picker and displays it, scaled to fit the window.
+  file picker.
 - `AcquisitionSource` interface in place (`app/acquisition/base.py`) so the
   analysis pipeline (from Phase 4 onward) is acquisition-agnostic; a guarded
   Picamera2 stub (`app/acquisition/camera.py`) exists for the Phase 15 live
@@ -27,17 +27,24 @@ or CFU. See [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
   image is validated, SHA-256 hashed, copied untouched into
   `data/original/<hash>.<ext>` (re-imports of the same file are detected
   and not re-copied), and run through real quality diagnostics.
-- **Quality diagnostics** (`app/image_engine/quality/`): blur (Laplacian
-  variance), contrast (intensity std-dev), illumination uniformity
-  (grid-based coefficient of variation), and clipping (dark/bright pixel
-  fraction) — every value actually computed from the image, with named
-  warnings (`BLURRY`, `LOW_CONTRAST`, `UNEVEN_ILLUMINATION`,
-  `CLIPPED_DARK`, `CLIPPED_BRIGHT`) shown in a panel under the viewer.
+- **Quality diagnostics** (`app/image_engine/quality/`): blur, contrast,
+  illumination uniformity, and clipping — every value actually computed,
+  with named warnings shown in a panel under the viewer.
+- **Zoom / pan / ROI viewer** (`app/gui/image_viewer.py`): mouse-wheel zoom,
+  drag-to-pan, a toggleable rectangular ROI tool (coordinates shown in the
+  status bar — not yet consumed by analysis, that's Phase 9's spatial
+  calibration), and a "Fit to Window" button.
+- **Preprocessing pipeline with inspectable stages**
+  (`app/image_engine/preprocessing/`): every loaded image is run through
+  Grayscale → Normalized → Background Estimate → Corrected → Denoised →
+  Enhanced (CLAHE), and a toolbar dropdown lets you switch the viewer to
+  any stage — per spec Section 7's requirement that every intermediate be
+  inspectable.
 
-Not yet implemented (later phases — see `docs/PHASE_2.md` "Next Phase" and
-the master spec): preprocessing, segmentation/detection, filtering,
-watershed separation, validation datasets, database persistence,
-reporting, and everything past Phase 2 in the phase list.
+Not yet implemented (later phases — see `docs/PHASE_3.md` "Next Phase" and
+the master spec): segmentation/detection, filtering, watershed separation,
+validation datasets, database persistence, reporting, and everything past
+Phase 3 in the phase list.
 
 ## Install & run
 

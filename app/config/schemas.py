@@ -66,6 +66,19 @@ class QualityConfig(BaseModel):
     illumination_grid_size: int = 4  # NxN grid for the illumination-uniformity check
 
 
+class PreprocessingConfig(BaseModel):
+    """Thresholds/parameters for the Phase 3 preprocessing stages (Section 7:
+    NORMALIZATION -> BACKGROUND/ILLUMINATION CORRECTION -> DENOISING ->
+    CONTRAST ENHANCEMENT). Never hardcoded in the stage functions themselves.
+    """
+
+    background_kernel_size: int = 51  # odd; large-kernel blur used as the background estimate
+    denoise_method: str = "gaussian"  # "gaussian" | "median"
+    denoise_kernel_size: int = 5  # odd
+    clahe_clip_limit: float = 2.0
+    clahe_tile_grid_size: int = 8  # NxN tiles
+
+
 class QualityMetrics(BaseModel):
     """Computed, real image-quality diagnostics for one image (Section 1:
     every value here comes from actual computation — nothing fabricated).

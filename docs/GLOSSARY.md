@@ -37,6 +37,18 @@ variance was below `blur_variance_min`. Not a judgment on the image's
 biological content; purely a signal that the detection pipeline (Phase 4
 onward) may be less reliable on this particular image.
 
+**Pipeline stage**
+One named, inspectable step of preprocessing (`Grayscale`, `Normalized`,
+`Background Estimate`, `Corrected`, `Denoised`, `Enhanced`) or later,
+segmentation/detection. Viewing a stage in the GUI shows exactly what that
+step of the pipeline produced — not a final result, and not yet a count.
+
+**ROI (Region of Interest)**
+A rectangular area the user has selected in the viewer. In Phase 3 this is
+purely a selection tool (coordinates shown in pixels); it is not yet used
+to restrict analysis or compute physical measurements — that requires
+spatial calibration (Section 10), added in Phase 9.
+
 **What none of the above mean:** "microorganism," "colony," "CFU," or any
 biological diagnosis. The system performs image-based feature detection
 and quantification — nothing more is claimed unless a controlled

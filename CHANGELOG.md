@@ -1,5 +1,28 @@
 # Changelog
 
+## Phase 3 — Zoom/pan/ROI viewer, preprocessing pipeline (2026-10-02)
+
+- `app/gui/image_viewer.py` — rewritten on `QGraphicsView`/`QGraphicsScene`:
+  mouse-wheel zoom (clamped), drag-to-pan, toggleable rectangular ROI
+  selection (`clamp_roi`, pure/tested), `fit_to_window()`. Replaces the
+  Phase 1 QLabel-based viewer.
+- `app/image_engine/preprocessing/stages.py` — real, independently-tested
+  `normalize`, `estimate_background`, `correct_illumination`, `denoise`
+  (gaussian/median), `enhance_contrast` (CLAHE).
+- `app/image_engine/preprocessing/pipeline.py` — `run_preprocessing_pipeline()`
+  runs all stages in Section-7 order and returns every named intermediate.
+- `app/config/schemas.py` — added `PreprocessingConfig`.
+- `MainWindow` — added a stage-selector toolbar (switches the viewer
+  between Original/Grayscale/Normalized/Background Estimate/Corrected/
+  Denoised/Enhanced), ROI toggle + clear buttons, Fit to Window button.
+- Found and fixed two real bugs via testing: `normalize()` returned the
+  wrong dtype on a flat/zero-range input (broke `correct_illumination`),
+  and a float-precision off-by-one left `normalize()`'s max value at 254
+  instead of 255 — see `docs/PHASE_3.md`.
+- 29 new tests (69 total), all passing, plus a full-app smoke test driving
+  every stage switch and a real ROI select/clear cycle through the actual
+  widgets.
+
 ## Phase 2 — Image validation, metadata, SHA-256, quality engine (2026-10-02)
 
 - `app/acquisition/validation.py` — validates the decoded image array
