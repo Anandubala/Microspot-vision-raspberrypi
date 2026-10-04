@@ -49,6 +49,13 @@ purely a selection tool (coordinates shown in pixels); it is not yet used
 to restrict analysis or compute physical measurements — that requires
 spatial calibration (Section 10), added in Phase 9.
 
+**Raw candidate overlay**
+The "Raw Candidates" pipeline stage: every detected region outlined on the
+image, unfiltered and unnumbered. Shows what segmentation + extraction
+found before Phase 5's filtering exists — not a reviewer-facing final
+count, and candidates here can include noise, debris, or artifacts that
+filtering will later reject.
+
 **What none of the above mean:** "microorganism," "colony," "CFU," or any
 biological diagnosis. The system performs image-based feature detection
 and quantification — nothing more is claimed unless a controlled

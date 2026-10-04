@@ -13,7 +13,7 @@ and reports an image-derived count with full parameter provenance.
 *candidate / detected feature*, never automatically a microorganism, colony,
 or CFU. See [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 
-## Current feature set (Phase 3)
+## Current feature set (Phase 4)
 
 - PySide6 desktop app skeleton, runs identically on Windows (dev) and
   Raspberry Pi OS (deploy).
@@ -41,10 +41,20 @@ or CFU. See [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
   any stage — per spec Section 7's requirement that every intermediate be
   inspectable.
 
-Not yet implemented (later phases — see `docs/PHASE_3.md` "Next Phase" and
-the master spec): segmentation/detection, filtering, watershed separation,
-validation datasets, database persistence, reporting, and everything past
-Phase 3 in the phase list.
+- **Segmentation + candidate detection**
+  (`app/image_engine/segmentation/`, `app/image_engine/detection/`):
+  classical CV (Otsu or adaptive thresholding → contour-based extraction),
+  with `AUTO`/`DARK_ON_LIGHT`/`BRIGHT_ON_DARK` polarity resolution. Runs on
+  the Enhanced stage; "Segmentation Mask" and "Raw Candidates" (outlined,
+  unfiltered, unnumbered) are added to the stage selector, with a live raw
+  candidate count. The `SpotDetector` interface (Section 8) is in place
+  with `ClassicalCVDetector` implemented and `ONNXDetector` stubbed for
+  Phase 14.
+
+Not yet implemented (later phases — see `docs/PHASE_4.md` "Next Phase" and
+the master spec): filtering with explainable rejection reasons, touching-
+spot separation, validation datasets, database persistence, reporting, and
+everything past Phase 4 in the phase list.
 
 ## Install & run
 

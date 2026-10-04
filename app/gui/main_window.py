@@ -8,6 +8,11 @@ image through the preprocessing pipeline, and added a stage selector so
 every intermediate (grayscale, normalized, background estimate, corrected,
 denoised, enhanced) is inspectable — per spec Section 7's requirement that
 every stage be visible in the GUI.
+Phase 4: runs classical-CV segmentation + candidate extraction on the
+Enhanced stage, adding "Segmentation Mask" and "Raw Candidates" to the
+same inspectable stage list, with a live candidate count. These are raw,
+unfiltered candidates (Section 1: never implicitly a validated spot) —
+filtering and a trustworthy final count are Phase 5.
 
 The full scientific-workstation layout (spec Section 12) is still built up
 incrementally; this is a working subset, not the final layout.
@@ -32,10 +37,13 @@ from PySide6.QtWidgets import (
 from app.acquisition.image_import import ImageLoadError, UnsupportedImageFormatError
 from app.acquisition.import_pipeline import import_image
 from app.acquisition.validation import InvalidImageError
+from app.config.schemas import DetectionConfig
 from app.config.settings import APP_NAME, APP_VERSION, SUPPORTED_IMAGE_EXTENSIONS
 from app.gui.image_viewer import ImageViewer
 from app.gui.quality_panel import QualityPanel
+from app.image_engine.detection.classical_cv import segment_and_extract
 from app.image_engine.preprocessing.pipeline import run_preprocessing_pipeline
+from app.image_engine.visualization.overlays import draw_candidate_outlines
 
 
 class MainWindow(QMainWindow):
@@ -100,6 +108,10 @@ class MainWindow(QMainWindow):
         clear_roi_button.clicked.connect(self._viewer.clear_roi)
         toolbar.addWidget(clear_roi_button)
 
+        toolbar.addSeparator()
+        self._candidate_count_label = QLabel(" Raw candidates: —", self)
+        toolbar.addWidget(self._candidate_count_label)
+
         self._viewer.roi_changed.connect(self._on_roi_changed)
 
     def _on_open_image(self) -> None:
@@ -132,6 +144,17 @@ class MainWindow(QMainWindow):
         self._stages = {"Original": result.image}
         self._stages.update(run_preprocessing_pipeline(result.image))
 
+        # Segmentation + raw candidate extraction (Phase 4) runs on the
+        # Enhanced stage, per Section 7's pipeline order. These are raw,
+        # unfiltered candidates — never implied to be validated spots.
+        detection_config = DetectionConfig()
+        mask, candidates = segment_and_extract(self._stages["Enhanced"], detection_config)
+        self._stages["Segmentation Mask"] = mask
+        self._stages["Raw Candidates"] = draw_candidate_outlines(
+            self._stages["Enhanced"], candidates
+        )
+        self._candidate_count_label.setText(f" Raw candidates: {len(candidates)}")
+
         self._stage_selector.blockSignals(True)
         self._stage_selector.clear()
         self._stage_selector.addItems(list(self._stages.keys()))
@@ -147,7 +170,8 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(
             f"Loaded {result.loaded.filename} — "
             f"{result.loaded.width}x{result.loaded.height}, "
-            f"{result.loaded.channels} channel(s) — quality: {status}"
+            f"{result.loaded.channels} channel(s) — quality: {status} — "
+            f"raw candidates: {len(candidates)}"
         )
 
     def _on_stage_changed(self, stage_name: str) -> None:

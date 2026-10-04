@@ -9,6 +9,7 @@ follow in the phases that introduce those features.
 from __future__ import annotations
 
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
@@ -77,6 +78,68 @@ class PreprocessingConfig(BaseModel):
     denoise_kernel_size: int = 5  # odd
     clahe_clip_limit: float = 2.0
     clahe_tile_grid_size: int = 8  # NxN tiles
+
+
+class DetectionPolarity(str, Enum):
+    """Spec Section 7.1. AUTO is resolved per-image by
+    detection.classical_cv.determine_polarity — never a random guess, but a
+    real (simple, documented) measurement of image statistics.
+    """
+
+    DARK_ON_LIGHT = "DARK_ON_LIGHT"
+    BRIGHT_ON_DARK = "BRIGHT_ON_DARK"
+    AUTO = "AUTO"
+
+
+class SegmentationMethod(str, Enum):
+    """Spec Section 7.2. Exactly one runs per image — never all three —
+    and whichever ran is recorded (Section 10's provenance requirement,
+    fully persisted once Phase 10's database exists).
+    """
+
+    OTSU = "OTSU"
+    ADAPTIVE_MEAN = "ADAPTIVE_MEAN"
+    ADAPTIVE_GAUSSIAN = "ADAPTIVE_GAUSSIAN"
+
+
+class DetectionConfig(BaseModel):
+    """Segmentation + candidate-extraction parameters (Sections 7.1-7.3).
+    Nothing here is hardcoded into the detection functions themselves.
+
+    `detector_backend` exists now (Section 8: "the active detector is
+    chosen in configuration... stored per session") even though only
+    "classical_cv" is implemented — ONNXDetector (Phase 14) will read the
+    same field.
+    """
+
+    polarity: DetectionPolarity = DetectionPolarity.DARK_ON_LIGHT
+    segmentation_method: SegmentationMethod = SegmentationMethod.OTSU
+    adaptive_block_size: int = 35  # must be odd; used by both adaptive methods
+    adaptive_c: int = 5  # constant subtracted from the adaptive threshold
+    min_area_px: float = 1.0  # noise floor only — NOT the Phase 5 size-rejection rule
+    detector_backend: str = "classical_cv"  # "classical_cv" | "onnx" (Phase 14)
+
+
+class Candidate(BaseModel):
+    """One raw detected region from connected-component/contour extraction
+    (Section 7.4) — a *candidate*, never implicitly a validated spot or a
+    biological claim (Section 1). Phase 4 keeps this intentionally minimal
+    (centroid, bbox, area, contour outline); circularity, solidity,
+    rejection reasons, etc. are added in Phase 5 when filtering exists to
+    use them.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    id: int
+    centroid_x: float
+    centroid_y: float
+    bbox_x: int
+    bbox_y: int
+    bbox_w: int
+    bbox_h: int
+    area: float
+    contour: list[tuple[int, int]]  # polygon points, plain ints for JSON export later
 
 
 class QualityMetrics(BaseModel):

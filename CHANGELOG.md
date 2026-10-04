@@ -1,5 +1,36 @@
 # Changelog
 
+## Phase 4 — Segmentation + connected-components candidate detection (2026-10-03)
+
+- `app/config/schemas.py` — added `DetectionPolarity`, `SegmentationMethod`,
+  `DetectionConfig`, `Candidate`.
+- `app/image_engine/segmentation/thresholding.py` — `determine_polarity`
+  (AUTO resolved via mean-intensity heuristic, documented as a real but
+  limited measurement) and `compute_mask` (Otsu or adaptive thresholding,
+  exactly one method per image, per config).
+- `app/image_engine/detection/` — `SpotDetector` protocol (Section 8),
+  `candidate_extraction.py` (contour-based, with centroid/bbox/area),
+  `classical_cv.py` (`ClassicalCVDetector`, implemented), `onnx_detector.py`
+  (stub, raises `NotImplementedError`, Phase 14).
+- `app/image_engine/visualization/overlays.py` — `draw_candidate_outlines`
+  for the unfiltered "Raw Candidates" inspection stage.
+- `MainWindow` — runs detection on the Enhanced stage after every load;
+  adds "Segmentation Mask" and "Raw Candidates" to the stage selector, plus
+  a live raw-candidate count.
+- **Found and fixed a real bug via testing**: a perfectly flat
+  `BRIGHT_ON_DARK` image made Otsu's threshold degenerate to 0, which
+  (combined with non-inverted thresholding) flagged the *entire frame* as
+  one false-positive candidate — violating the spec's "zero detections is
+  a valid result" principle. Fixed by short-circuiting flat input
+  (`gray.min() == gray.max()`) to an empty mask. See `docs/PHASE_4.md`.
+- Corrected a wrong test assumption (not a code bug):
+  `cv2.contourArea` on a filled 20×20-pixel block returns 361 (19×19, the
+  shoelace-formula convention on corner coordinates), not 400 — documented
+  and fixed in the test rather than changing the (correct) implementation.
+- 32 new tests (101 total), all passing. Full-app smoke test on the Phase
+  1 fixture image (built with exactly 8 synthetic dots) found exactly 8
+  raw candidates — a real ground-truth check, not just a synthetic one.
+
 ## Phase 3 — Zoom/pan/ROI viewer, preprocessing pipeline (2026-10-02)
 
 - `app/gui/image_viewer.py` — rewritten on `QGraphicsView`/`QGraphicsScene`:
