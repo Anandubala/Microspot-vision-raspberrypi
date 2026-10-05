@@ -1,5 +1,31 @@
 # Changelog
 
+## Phase 5 — Candidate filtering, rejection reasons, validated overlay (2026-10-04)
+
+- `app/config/schemas.py` — extended `Candidate` with the full Section 7.4
+  feature set (perimeter, circularity, aspect_ratio, mean/min/max
+  intensity, local_contrast, equivalent_diameter, solidity, extent,
+  edge_state, rejection_reason); added `EdgeState` and `FilterConfig`.
+- `app/image_engine/detection/candidate_extraction.py` — rewritten to
+  compute every new feature from the mask + original grayscale image
+  (signature changed: now takes `gray` and a `DetectionConfig`).
+- `app/image_engine/filtering/filters.py` — `filter_candidates()` applies
+  6 rules in a fixed, documented order, each a named rejection reason;
+  `validated_count()`.
+- `app/image_engine/visualization/overlays.py` — added
+  `draw_validated_overlay()`: green numbered outlines for validated
+  candidates, orange unlabeled outlines for rejected ones.
+- `app/gui/results_panel.py` — new panel: validated count, raw/rejected
+  counts, rejection-reason breakdown, "NO VALID SPOTS DETECTED" when zero.
+- `MainWindow` — runs filtering after detection; adds "Validated Spots" to
+  the stage selector; status bar and toolbar now show validated (not just
+  raw) count.
+- 28 new tests (129 total), all passing. Verified on the Phase 1 fixture
+  (8/8 candidates validated, zero false rejections) and a new mixed-quality
+  synthetic image (3 round dots validated, 1 elongated bar correctly
+  rejected as `LOW_CIRCULARITY`, 1 sub-pixel noise speck never even
+  extracted as a candidate) — see `docs/PHASE_5.md`.
+
 ## Phase 4 — Segmentation + connected-components candidate detection (2026-10-03)
 
 - `app/config/schemas.py` — added `DetectionPolarity`, `SegmentationMethod`,

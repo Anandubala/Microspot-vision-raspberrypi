@@ -11,8 +11,12 @@ every stage be visible in the GUI.
 Phase 4: runs classical-CV segmentation + candidate extraction on the
 Enhanced stage, adding "Segmentation Mask" and "Raw Candidates" to the
 same inspectable stage list, with a live candidate count. These are raw,
-unfiltered candidates (Section 1: never implicitly a validated spot) —
-filtering and a trustworthy final count are Phase 5.
+unfiltered candidates (Section 1: never implicitly a validated spot).
+Phase 5: runs every raw candidate through filter_candidates() (explicit,
+named rejection reasons), adds "Validated Spots" (the numbered, reviewer-
+facing final overlay) to the stage list, and shows a results panel with
+the validated count and a rejection-reason breakdown — never a bare final
+number with no basis shown.
 
 The full scientific-workstation layout (spec Section 12) is still built up
 incrementally; this is a working subset, not the final layout.
@@ -37,13 +41,15 @@ from PySide6.QtWidgets import (
 from app.acquisition.image_import import ImageLoadError, UnsupportedImageFormatError
 from app.acquisition.import_pipeline import import_image
 from app.acquisition.validation import InvalidImageError
-from app.config.schemas import DetectionConfig
+from app.config.schemas import DetectionConfig, FilterConfig
 from app.config.settings import APP_NAME, APP_VERSION, SUPPORTED_IMAGE_EXTENSIONS
 from app.gui.image_viewer import ImageViewer
 from app.gui.quality_panel import QualityPanel
+from app.gui.results_panel import ResultsPanel
 from app.image_engine.detection.classical_cv import segment_and_extract
+from app.image_engine.filtering.filters import filter_candidates, validated_count
 from app.image_engine.preprocessing.pipeline import run_preprocessing_pipeline
-from app.image_engine.visualization.overlays import draw_candidate_outlines
+from app.image_engine.visualization.overlays import draw_candidate_outlines, draw_validated_overlay
 
 
 class MainWindow(QMainWindow):
@@ -57,12 +63,15 @@ class MainWindow(QMainWindow):
 
         self._viewer = ImageViewer(self)
         self._quality_panel = QualityPanel(self)
+        self._results_panel = ResultsPanel(self)
 
         splitter = QSplitter(Qt.Orientation.Vertical, self)
         splitter.addWidget(self._viewer)
         splitter.addWidget(self._quality_panel)
-        splitter.setStretchFactor(0, 4)
+        splitter.addWidget(self._results_panel)
+        splitter.setStretchFactor(0, 5)
         splitter.setStretchFactor(1, 1)
+        splitter.setStretchFactor(2, 1)
         self.setCentralWidget(splitter)
 
         self._build_menu()
@@ -148,12 +157,25 @@ class MainWindow(QMainWindow):
         # Enhanced stage, per Section 7's pipeline order. These are raw,
         # unfiltered candidates — never implied to be validated spots.
         detection_config = DetectionConfig()
-        mask, candidates = segment_and_extract(self._stages["Enhanced"], detection_config)
+        mask, raw_candidates = segment_and_extract(self._stages["Enhanced"], detection_config)
         self._stages["Segmentation Mask"] = mask
         self._stages["Raw Candidates"] = draw_candidate_outlines(
-            self._stages["Enhanced"], candidates
+            self._stages["Enhanced"], raw_candidates
         )
-        self._candidate_count_label.setText(f" Raw candidates: {len(candidates)}")
+
+        # Filtering (Phase 5): every candidate gets an explicit
+        # rejection_reason (or None). "Validated Spots" is the Section 12
+        # reviewer-facing numbered overlay — not a debug stage.
+        filter_config = FilterConfig()
+        filtered_candidates = filter_candidates(raw_candidates, filter_config)
+        self._stages["Validated Spots"] = draw_validated_overlay(
+            self._stages["Enhanced"], filtered_candidates
+        )
+        n_validated = validated_count(filtered_candidates)
+        self._candidate_count_label.setText(
+            f" Raw candidates: {len(raw_candidates)}  |  Validated: {n_validated}"
+        )
+        self._results_panel.show_result(filtered_candidates)
 
         self._stage_selector.blockSignals(True)
         self._stage_selector.clear()
@@ -171,7 +193,7 @@ class MainWindow(QMainWindow):
             f"Loaded {result.loaded.filename} — "
             f"{result.loaded.width}x{result.loaded.height}, "
             f"{result.loaded.channels} channel(s) — quality: {status} — "
-            f"raw candidates: {len(candidates)}"
+            f"validated: {n_validated} (raw: {len(raw_candidates)})"
         )
 
     def _on_stage_changed(self, stage_name: str) -> None:

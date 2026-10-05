@@ -22,7 +22,7 @@ def segment_and_extract(
     """
     resolved_polarity = determine_polarity(gray, config.polarity)
     mask = compute_mask(gray, config, resolved_polarity)
-    candidates = extract_candidates(mask, config.min_area_px)
+    candidates = extract_candidates(mask, gray, config)
     return mask, candidates
 
 

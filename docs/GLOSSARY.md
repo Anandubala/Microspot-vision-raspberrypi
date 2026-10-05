@@ -56,6 +56,17 @@ found before Phase 5's filtering exists — not a reviewer-facing final
 count, and candidates here can include noise, debris, or artifacts that
 filtering will later reject.
 
+**Rejected candidate**
+A candidate whose `rejection_reason` is not `None` — it failed one of the
+configured filtering rules (Section 7.4). Shown in orange, unlabeled, in
+the "Validated Spots" overlay, and counted (by reason) in the results
+panel. Not discarded silently — every rejection is visible and explained.
+
+**NO VALID SPOTS DETECTED**
+The exact result when zero candidates pass filtering (or zero were
+detected at all). Per spec Section 1, this is always shown as a clearly
+labeled, valid result — never implied to mean "sterile" or "clean."
+
 **What none of the above mean:** "microorganism," "colony," "CFU," or any
 biological diagnosis. The system performs image-based feature detection
 and quantification — nothing more is claimed unless a controlled

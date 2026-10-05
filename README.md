@@ -13,7 +13,7 @@ and reports an image-derived count with full parameter provenance.
 *candidate / detected feature*, never automatically a microorganism, colony,
 or CFU. See [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 
-## Current feature set (Phase 4)
+## Current feature set (Phase 5)
 
 - PySide6 desktop app skeleton, runs identically on Windows (dev) and
   Raspberry Pi OS (deploy).
@@ -51,10 +51,27 @@ or CFU. See [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
   with `ClassicalCVDetector` implemented and `ONNXDetector` stubbed for
   Phase 14.
 
-Not yet implemented (later phases — see `docs/PHASE_4.md` "Next Phase" and
-the master spec): filtering with explainable rejection reasons, touching-
-spot separation, validation datasets, database persistence, reporting, and
-everything past Phase 4 in the phase list.
+- **Candidate filtering with explainable rejection reasons**
+  (`app/image_engine/filtering/filters.py`): every raw candidate now
+  carries a full Section 7.4 feature set (perimeter, circularity, aspect
+  ratio, intensity stats, local contrast, equivalent diameter, solidity,
+  extent, edge state) and is checked against a `FilterConfig`. A candidate
+  that fails is tagged with one explicit reason (`AREA_TOO_SMALL`,
+  `LOW_CIRCULARITY`, `LOW_SOLIDITY`, `HIGH_ASPECT_RATIO`,
+  `LOW_LOCAL_CONTRAST`, `EDGE_EXCLUDED`) — never silently dropped.
+- **"Validated Spots" numbered overlay** (`app/image_engine/visualization/
+  overlays.py`): the Section 12 reviewer-facing result — validated
+  candidates outlined in green and numbered; rejected ones outlined in
+  orange, unlabeled. Added to the stage selector.
+- **Results panel** (`app/gui/results_panel.py`): shows the validated
+  count, raw count, and a breakdown of how many candidates were rejected
+  and why — or a clear "NO VALID SPOTS DETECTED" when the count is zero
+  (Section 1: zero is a valid result, never implied to mean "clean").
+
+Not yet implemented (later phases — see `docs/PHASE_5.md` "Next Phase" and
+the master spec): multi-scale config exposed in the GUI, touching-spot
+separation, validation datasets, database persistence, reporting, and
+everything past Phase 5 in the phase list.
 
 ## Install & run
 

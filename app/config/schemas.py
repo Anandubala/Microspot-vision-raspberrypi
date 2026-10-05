@@ -118,15 +118,61 @@ class DetectionConfig(BaseModel):
     adaptive_c: int = 5  # constant subtracted from the adaptive threshold
     min_area_px: float = 1.0  # noise floor only — NOT the Phase 5 size-rejection rule
     detector_backend: str = "classical_cv"  # "classical_cv" | "onnx" (Phase 14)
+    local_contrast_ring_px: int = 3  # width of the surrounding ring sampled for local_contrast
+
+
+class EdgeState(str, Enum):
+    """Spec Section 7.4. An objective geometric fact about a candidate's
+    bounding box relative to the frame — computed at extraction time and
+    never changed by filtering policy. COMPLETE means the bounding box
+    doesn't touch the image border; PARTIAL means it does (the candidate's
+    true extent may be cut off by the frame edge, so its area/shape
+    features may be unreliable).
+
+    EDGE_EXCLUDED is NOT a value this enum ever takes. It is one of the
+    possible `rejection_reason` strings a filtering rule can attach to a
+    PARTIAL candidate — see FilterConfig.exclude_edge_candidates and
+    docs/PHASE_5.md "design decisions" for why the exclusion decision is
+    kept separate from the geometric fact.
+    """
+
+    COMPLETE = "COMPLETE"
+    PARTIAL = "PARTIAL"
+
+
+class FilterConfig(BaseModel):
+    """Thresholds for candidate filtering (Section 7.4). Every value here
+    is a configurable cutoff, never hardcoded in the filtering logic
+    itself (Section 1). Defaults are generic starting points — see
+    docs/PHASE_5.md "Known limitations" — not calibrated against your lab's
+    real images.
+
+    Filtering rules are applied in a fixed, documented order (see
+    filtering/filters.py); a candidate failing more than one rule is
+    reported with the FIRST rule it fails, not a list of all of them —
+    matching the spec's "a candidate carries an explicit reason" (singular).
+    """
+
+    min_area_px: float = 10.0
+    max_area_px: float | None = None  # None = no upper bound
+    min_circularity: float = 0.3  # 0-1; 1.0 is a perfect circle
+    min_solidity: float = 0.5  # 0-1; area / convex-hull area
+    max_aspect_ratio: float = 3.0  # >=1.0; long/short bbox side ratio
+    min_local_contrast: float = 10.0  # intensity units, 0-255 scale
+    exclude_edge_candidates: bool = False  # reject PARTIAL (frame-touching) candidates
 
 
 class Candidate(BaseModel):
-    """One raw detected region from connected-component/contour extraction
-    (Section 7.4) — a *candidate*, never implicitly a validated spot or a
-    biological claim (Section 1). Phase 4 keeps this intentionally minimal
-    (centroid, bbox, area, contour outline); circularity, solidity,
-    rejection reasons, etc. are added in Phase 5 when filtering exists to
-    use them.
+    """One detected region, from raw extraction through filtering
+    (Section 7.4) — a *candidate* until `rejection_reason` is confirmed
+    None, never implicitly a validated spot or a biological claim
+    (Section 1).
+
+    Phase 4 had only centroid/bbox/area/contour. Phase 5 adds every other
+    feature Section 7.4 lists (perimeter, circularity, aspect ratio,
+    intensity statistics, local contrast, equivalent diameter, solidity,
+    extent, edge state) plus `rejection_reason`, set by filtering — never
+    at extraction time, since extraction doesn't know the filter config.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -140,6 +186,24 @@ class Candidate(BaseModel):
     bbox_h: int
     area: float
     contour: list[tuple[int, int]]  # polygon points, plain ints for JSON export later
+
+    perimeter: float
+    circularity: float  # 4*pi*area / perimeter^2; 1.0 = perfect circle
+    aspect_ratio: float  # >=1.0; longer bbox side / shorter bbox side
+    mean_intensity: float
+    min_intensity: float
+    max_intensity: float
+    local_contrast: float  # |mean inside the blob - mean in the ring just outside it|
+    equivalent_diameter: float  # diameter of a circle with the same area
+    solidity: float  # area / convex-hull area; 1.0 = fully convex
+    extent: float  # area / bounding-box area
+    edge_state: EdgeState
+
+    rejection_reason: str | None = None  # None until filtering runs; see FilterConfig
+
+    @property
+    def is_validated(self) -> bool:
+        return self.rejection_reason is None
 
 
 class QualityMetrics(BaseModel):
