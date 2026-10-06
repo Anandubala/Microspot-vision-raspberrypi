@@ -119,6 +119,11 @@ class DetectionConfig(BaseModel):
     min_area_px: float = 1.0  # noise floor only — NOT the Phase 5 size-rejection rule
     detector_backend: str = "classical_cv"  # "classical_cv" | "onnx" (Phase 14)
     local_contrast_ring_px: int = 3  # width of the surrounding ring sampled for local_contrast
+    enable_watershed_separation: bool = True  # Section 7.5 — off disables Phase 6 entirely
+    watershed_min_peak_distance_px: int = 5  # min pixel gap between two spot "centers" to
+    # treat them as separate during touching-spot separation (see separation/watershed.py).
+    # Generic default — too small risks over-splitting noise, too large risks under-splitting
+    # genuinely close spots. NOT calibrated against real images; tune once you have them.
 
 
 class EdgeState(str, Enum):
@@ -153,8 +158,24 @@ class FilterConfig(BaseModel):
     matching the spec's "a candidate carries an explicit reason" (singular).
     """
 
-    min_area_px: float = 10.0
+    # Lowered from an initial guess of 10.0 after real-world input (lab
+    # assistant, 2026-10-05): real spots may be as small as ~2-3px diameter
+    # (area ~3-7 px²), which the old default would have silently rejected
+    # as AREA_TOO_SMALL. 2.0 is a deliberately permissive placeholder, not
+    # a calibrated value — it exists so tiny real spots aren't thrown away
+    # by default while this gets properly tuned against real sample images
+    # (see docs/PHASE_5.md "Addendum").
+    min_area_px: float = 2.0
     max_area_px: float | None = None  # None = no upper bound
+    # Section 7.3 "Multi-scale / size handling" explicitly calls out BOTH
+    # area and diameter as configurable size bounds. Area-based filtering
+    # (above) is the primary, always-active size gate; these diameter
+    # bounds are an additional, OPTIONAL gate (None = disabled by default)
+    # for when a reviewer finds it more natural to reason in "this spot is
+    # N pixels across" terms — exactly how the lab assistant described
+    # spot sizes (e.g. "2 pixels", "3 pixels" — diameter, not area).
+    min_diameter_px: float | None = None
+    max_diameter_px: float | None = None
     min_circularity: float = 0.3  # 0-1; 1.0 is a perfect circle
     min_solidity: float = 0.5  # 0-1; area / convex-hull area
     max_aspect_ratio: float = 3.0  # >=1.0; long/short bbox side ratio

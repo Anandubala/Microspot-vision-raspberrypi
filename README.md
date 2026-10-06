@@ -13,7 +13,7 @@ and reports an image-derived count with full parameter provenance.
 *candidate / detected feature*, never automatically a microorganism, colony,
 or CFU. See [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 
-## Current feature set (Phase 5)
+## Current feature set (Phase 6)
 
 - PySide6 desktop app skeleton, runs identically on Windows (dev) and
   Raspberry Pi OS (deploy).
@@ -68,10 +68,26 @@ or CFU. See [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
   and why — or a clear "NO VALID SPOTS DETECTED" when the count is zero
   (Section 1: zero is a valid result, never implied to mean "clean").
 
-Not yet implemented (later phases — see `docs/PHASE_5.md` "Next Phase" and
-the master spec): multi-scale config exposed in the GUI, touching-spot
-separation, validation datasets, database persistence, reporting, and
-everything past Phase 5 in the phase list.
+- **Touching-spot separation** (`app/image_engine/separation/watershed.py`):
+  distance-transform + watershed, applied only to blobs whose shape shows
+  genuine evidence of two or more merged spots — a normal single spot is
+  never split. Runs before candidate extraction, so each separated
+  sub-spot gets its own accurate feature set and is filtered on its own
+  merits. Whether it actually ran is shown in the results panel.
+- **Multi-scale size config** (Section 7.3): candidates can now be filtered
+  by diameter (`FilterConfig.min_diameter_px` / `max_diameter_px`), in
+  addition to area — off by default (area is the primary size gate).
+  `FilterConfig.min_area_px` default lowered to 2.0px² after real
+  lab-assistant input that spots may be only 2-3px in diameter.
+- **Per-spot pixel-size reporting**: the results panel now lists every
+  validated spot's area (px²) and equivalent diameter (px), matching the
+  "Validated Spots" overlay's numbering exactly.
+
+Not yet implemented (later phases — see `docs/PHASE_6.md` "Next Phase" and
+the master spec): a controlled validation dataset workflow, in-app manual
+ground-truth annotation, ROI-based/calibrated physical measurement,
+database persistence, reporting, and everything past Phase 6 in the phase
+list.
 
 ## Install & run
 

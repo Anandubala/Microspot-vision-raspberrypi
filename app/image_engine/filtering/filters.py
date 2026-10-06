@@ -1,13 +1,17 @@
 """Candidate filtering (spec Section 7.4: "Rejections must carry an
 explicit reason, e.g. REJECTED: AREA_TOO_SMALL, REJECTED: LOW_CIRCULARITY").
 
-Rules run in a fixed, documented order (AREA -> CIRCULARITY -> SOLIDITY ->
-ASPECT_RATIO -> LOCAL_CONTRAST -> EDGE), and a candidate failing more than
-one is reported with the FIRST one it fails — matching the spec's "a
-candidate carries an explicit reason" (singular), not a list of every rule
-it happens to violate. The chosen order runs the cheapest, most
-decisive checks first (a tiny noise speck is almost always rejected on
-area alone, long before its circularity would even matter).
+Rules run in a fixed, documented order (AREA -> DIAMETER (optional,
+Section 7.3) -> CIRCULARITY -> SOLIDITY -> ASPECT_RATIO -> LOCAL_CONTRAST
+-> EDGE), and a candidate failing more than one is reported with the
+FIRST one it fails — matching the spec's "a candidate carries an explicit
+reason" (singular), not a list of every rule it happens to violate. The
+chosen order runs the cheapest, most decisive checks first (a tiny noise
+speck is almost always rejected on area alone, long before its
+circularity would even matter). Diameter checks are disabled by default
+(FilterConfig.min/max_diameter_px default to None) — area is the primary
+size gate; diameter is an additional, optional one for when a reviewer
+finds it more natural to reason in "this spot is N pixels across" terms.
 """
 from __future__ import annotations
 
@@ -15,6 +19,8 @@ from app.config.schemas import Candidate, EdgeState, FilterConfig
 
 AREA_TOO_SMALL = "AREA_TOO_SMALL"
 AREA_TOO_LARGE = "AREA_TOO_LARGE"
+DIAMETER_TOO_SMALL = "DIAMETER_TOO_SMALL"
+DIAMETER_TOO_LARGE = "DIAMETER_TOO_LARGE"
 LOW_CIRCULARITY = "LOW_CIRCULARITY"
 LOW_SOLIDITY = "LOW_SOLIDITY"
 HIGH_ASPECT_RATIO = "HIGH_ASPECT_RATIO"
@@ -30,6 +36,10 @@ def _first_failing_rule(candidate: Candidate, config: FilterConfig) -> str | Non
         return AREA_TOO_SMALL
     if config.max_area_px is not None and candidate.area > config.max_area_px:
         return AREA_TOO_LARGE
+    if config.min_diameter_px is not None and candidate.equivalent_diameter < config.min_diameter_px:
+        return DIAMETER_TOO_SMALL
+    if config.max_diameter_px is not None and candidate.equivalent_diameter > config.max_diameter_px:
+        return DIAMETER_TOO_LARGE
     if candidate.circularity < config.min_circularity:
         return LOW_CIRCULARITY
     if candidate.solidity < config.min_solidity:

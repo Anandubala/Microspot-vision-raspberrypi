@@ -157,7 +157,9 @@ class MainWindow(QMainWindow):
         # Enhanced stage, per Section 7's pipeline order. These are raw,
         # unfiltered candidates — never implied to be validated spots.
         detection_config = DetectionConfig()
-        mask, raw_candidates = segment_and_extract(self._stages["Enhanced"], detection_config)
+        mask, raw_candidates, separation_applied = segment_and_extract(
+            self._stages["Enhanced"], detection_config
+        )
         self._stages["Segmentation Mask"] = mask
         self._stages["Raw Candidates"] = draw_candidate_outlines(
             self._stages["Enhanced"], raw_candidates
@@ -175,7 +177,7 @@ class MainWindow(QMainWindow):
         self._candidate_count_label.setText(
             f" Raw candidates: {len(raw_candidates)}  |  Validated: {n_validated}"
         )
-        self._results_panel.show_result(filtered_candidates)
+        self._results_panel.show_result(filtered_candidates, separation_applied)
 
         self._stage_selector.blockSignals(True)
         self._stage_selector.clear()

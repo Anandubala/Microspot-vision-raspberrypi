@@ -1,5 +1,35 @@
 # Changelog
 
+## Phase 6 — Multi-scale config, touching-spot separation, lab-assistant feedback (2026-10-05)
+
+Prompted by real feedback from the lab assistant: count dark spots only,
+report each spot's size in pixels, and separate spots that are stuck
+together before counting them.
+
+- `app/gui/results_panel.py` — added a per-spot pixel-size listing (area +
+  equivalent diameter), matching the "Validated Spots" overlay's numbering.
+- `app/config/schemas.py` — `FilterConfig.min_area_px` default lowered
+  from 10.0 to 2.0 after learning real spots may be only 2-3px diameter
+  (area ~3-7px²) — the old default would have silently rejected them.
+  Added optional `min_diameter_px`/`max_diameter_px` (Section 7.3,
+  disabled by default). Added `DetectionConfig.enable_watershed_separation`
+  and `watershed_min_peak_distance_px`.
+- `app/image_engine/separation/watershed.py` — new: distance-transform +
+  watershed touching-spot separation, applied only to blobs with genuine
+  evidence of multiple merged centers (never forces a split).
+- `app/image_engine/detection/classical_cv.py` — `segment_and_extract()`
+  now runs separation BEFORE extraction (not after filtering, despite the
+  spec diagram's literal order — see docs/PHASE_6.md "design decisions"
+  for why) and returns a 3-tuple including whether separation was applied.
+- `app/image_engine/filtering/filters.py` — added `DIAMETER_TOO_SMALL`/
+  `DIAMETER_TOO_LARGE` rejection reasons.
+- `MainWindow` / `ResultsPanel` — show whether touching-spot separation
+  ran this session (Section 7.5's "record whether it was used").
+- 13 new tests (142 total), all passing. Verified on a real touching-spots
+  scenario end to end through the actual GUI: two overlapping dark circles
+  correctly separate into 2 validated spots (vs. 1 with separation
+  disabled) — see `docs/PHASE_6.md`.
+
 ## Phase 5 — Candidate filtering, rejection reasons, validated overlay (2026-10-04)
 
 - `app/config/schemas.py` — extended `Candidate` with the full Section 7.4

@@ -67,6 +67,13 @@ The exact result when zero candidates pass filtering (or zero were
 detected at all). Per spec Section 1, this is always shown as a clearly
 labeled, valid result — never implied to mean "sterile" or "clean."
 
+**Touching-spot separation**
+A distance-transform + watershed step that splits a single detected blob
+into two or more spots when the blob's shape shows clear evidence of more
+than one spot merged together (two distinct "centers" close together).
+Applied selectively — a normal single spot is never split. Whether it ran
+for a given image is shown in the results panel (Section 7.5).
+
 **What none of the above mean:** "microorganism," "colony," "CFU," or any
 biological diagnosis. The system performs image-based feature detection
 and quantification — nothing more is claimed unless a controlled

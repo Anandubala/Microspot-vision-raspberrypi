@@ -5,6 +5,8 @@ from app.image_engine.detection.candidate_extraction import extract_candidates
 from app.image_engine.filtering.filters import (
     AREA_TOO_LARGE,
     AREA_TOO_SMALL,
+    DIAMETER_TOO_LARGE,
+    DIAMETER_TOO_SMALL,
     EDGE_EXCLUDED,
     HIGH_ASPECT_RATIO,
     LOW_CIRCULARITY,
@@ -41,6 +43,30 @@ def test_area_too_large_rejection():
     c = _candidate_from_blob((10, 90, 10, 90))  # large 80x80 blob
     result = filter_candidates([c], FilterConfig(max_area_px=100.0))[0]
     assert result.rejection_reason == AREA_TOO_LARGE
+
+
+def test_diameter_too_small_rejection():
+    c = _candidate_from_blob((40, 44, 40, 44))  # tiny 4x4 blob, small diameter
+    config = FilterConfig(min_area_px=0.0, min_diameter_px=10.0)
+    result = filter_candidates([c], config)[0]
+    assert result.rejection_reason == DIAMETER_TOO_SMALL
+
+
+def test_diameter_too_large_rejection():
+    c = _candidate_from_blob((10, 90, 10, 90))  # large 80x80 blob
+    config = FilterConfig(max_diameter_px=20.0)
+    result = filter_candidates([c], config)[0]
+    assert result.rejection_reason == DIAMETER_TOO_LARGE
+
+
+def test_diameter_filters_disabled_by_default():
+    c = _candidate_from_blob((40, 44, 40, 44))  # tiny blob
+    # Default FilterConfig has min_diameter_px=None — must not reject on
+    # diameter even though this blob is small, since diameter checks are
+    # opt-in. (It may still be rejected by area/other rules — that's fine,
+    # this test only asserts diameter isn't the active gate.)
+    result = filter_candidates([c], FilterConfig(min_area_px=0.0))[0]
+    assert result.rejection_reason != DIAMETER_TOO_SMALL
 
 
 def test_low_circularity_rejection_for_elongated_shape():

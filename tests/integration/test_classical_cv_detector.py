@@ -69,12 +69,59 @@ def test_segment_and_extract_returns_mask_matching_candidates():
     img = _known_dot_image(4, DetectionPolarity.DARK_ON_LIGHT)
     config = DetectionConfig(polarity=DetectionPolarity.DARK_ON_LIGHT)
 
-    mask, candidates = segment_and_extract(img, config)
+    mask, candidates, separation_applied = segment_and_extract(img, config)
     assert mask.shape == img.shape
     assert len(candidates) == 4
+    assert separation_applied is False  # well-separated dots — nothing to split
     # Every candidate's centroid should actually land on foreground mask pixels.
     for c in candidates:
         assert mask[int(c.centroid_y), int(c.centroid_x)] == 255
+
+
+def test_well_separated_dots_are_not_falsely_split_by_watershed():
+    """Regression guard: Phase 6's watershed separation must not alter
+    results for dots that were already well-separated (every earlier
+    known-dot-count test implicitly depends on this, but this makes the
+    guarantee explicit).
+    """
+    img = _known_dot_image(12, DetectionPolarity.DARK_ON_LIGHT)
+    config = DetectionConfig(polarity=DetectionPolarity.DARK_ON_LIGHT)
+
+    mask_with, candidates_with, applied = segment_and_extract(img, config)
+    assert applied is False
+    assert len(candidates_with) == 12
+
+    config_no_watershed = DetectionConfig(
+        polarity=DetectionPolarity.DARK_ON_LIGHT, enable_watershed_separation=False
+    )
+    mask_without, candidates_without, applied_without = segment_and_extract(
+        img, config_no_watershed
+    )
+    assert applied_without is False
+    assert len(candidates_without) == 12
+    assert np.array_equal(mask_with, mask_without)
+
+
+def test_touching_dots_are_separated_and_counted_individually():
+    """The actual scenario the lab assistant described: two spots stuck
+    together must be separated and counted as two, not one.
+    """
+    img = np.full((150, 300), 210, dtype=np.uint8)
+    cv2.circle(img, (100, 75), 25, 30, -1)
+    cv2.circle(img, (145, 75), 25, 30, -1)  # overlaps the first — one merged blob
+
+    config = DetectionConfig(polarity=DetectionPolarity.DARK_ON_LIGHT)
+    mask, candidates, separation_applied = segment_and_extract(img, config)
+
+    assert separation_applied is True
+    assert len(candidates) == 2
+
+    config_no_watershed = DetectionConfig(
+        polarity=DetectionPolarity.DARK_ON_LIGHT, enable_watershed_separation=False
+    )
+    _, candidates_no_sep, applied_no_sep = segment_and_extract(img, config_no_watershed)
+    assert applied_no_sep is False
+    assert len(candidates_no_sep) == 1  # proves separation is what made the difference
 
 
 def test_adaptive_method_also_finds_known_dots():
