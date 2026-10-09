@@ -74,6 +74,14 @@ than one spot merged together (two distinct "centers" close together).
 Applied selectively — a normal single spot is never split. Whether it ran
 for a given image is shown in the results panel (Section 7.5).
 
+**Diameter cap**
+A configured upper bound (`FilterConfig.max_diameter_px`) on how large a
+validated spot can be, measured as equivalent diameter in pixels. Added
+after a real lab image showed large, roughly circular structures
+(out-of-focus cells, debris, or similar — not the target spots) passing
+every other filtering rule, since circularity and solidity alone favor
+round shapes regardless of actual size.
+
 **What none of the above mean:** "microorganism," "colony," "CFU," or any
 biological diagnosis. The system performs image-based feature detection
 and quantification — nothing more is claimed unless a controlled

@@ -1,5 +1,50 @@
 # Changelog
 
+## Phase 7 — Performance, UI responsiveness, layout, oversized false positives (2026-10-06)
+
+Prompted by real feedback after testing on an actual lab image (~9,800
+candidates) — three distinct, real problems, not synthetic concerns:
+
+- **Performance bug fixed**: `candidate_extraction.py`'s per-candidate
+  intensity/local-contrast computation allocated a full-image-sized array
+  for EVERY candidate. On an image with thousands of candidates this was
+  the dominant cost behind a reported ~1-1.5 minute UI freeze. Rewrote to
+  use a small local crop per candidate instead. Measured: a comparable
+  ~8,700-candidate synthetic stress test now completes in ~0.55s (this
+  function alone) / ~1.9s (full pipeline) on dev hardware, down from an
+  estimated 13+ seconds for this function alone with the old code.
+- **UI freeze fixed properly, not just made faster**: added
+  `AnalysisWorker(QThread)` so preprocessing/detection/filtering run off
+  the GUI thread, per spec Section 12's own (previously unfollowed)
+  instruction. The original image and quality results now display
+  immediately after import; an indeterminate progress bar runs during
+  analysis instead of the window appearing frozen.
+- **Splitter collapse bug fixed**: `setChildrenCollapsible(False)` on
+  every splitter, explicit minimum heights on the quality/results panels,
+  and the two panels moved into their own side-by-side horizontal
+  splitter (was stacked vertically) — fixes a reported bug where dragging
+  a splitter handle could make the results panel disappear with no way to
+  resize it back.
+- **Oversized false-positive gap fixed**: `FilterConfig.max_diameter_px`
+  now defaults to 20.0px (was `None` — no upper bound at all). A real lab
+  image showed large, roughly circular structures (tens to ~150px across)
+  passing every filtering rule, since circularity/solidity alone favor
+  round shapes regardless of size. Verified directly: 3 large synthetic
+  blobs (diameter 119-169px) are correctly rejected as
+  `DIAMETER_TOO_LARGE`. Also found, as a secondary finding: Phase 3's
+  background-correction preprocessing already suppresses large,
+  gradual-contrast blobs before detection even sees them in some cases —
+  the new diameter cap is a deliberate, direct safety net for whatever
+  doesn't get caught that way, not a replacement for it.
+- Fixed 8 tests whose fixtures (20-80px blobs) were incidentally above the
+  new 20px diameter default and started failing for the wrong reason
+  (`DIAMETER_TOO_LARGE` pre-empting the rule each test actually meant to
+  isolate) — either shrunk the fixture or explicitly set
+  `max_diameter_px=None` to isolate the rule under test, per test.
+- 4 new tests (146 total): real-thread load/busy-state verification,
+  a guard against starting a second analysis while one is running, and
+  splitter-non-collapsibility checks.
+
 ## Phase 6 — Multi-scale config, touching-spot separation, lab-assistant feedback (2026-10-05)
 
 Prompted by real feedback from the lab assistant: count dark spots only,

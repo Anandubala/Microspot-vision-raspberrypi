@@ -45,10 +45,12 @@ def test_validated_overlay_returns_bgr_same_size():
 
 
 def test_validated_candidate_gets_green_outline_pixels():
+    # 10x10, not 20x20: must stay under the default max_diameter_px=20.0
+    # (added 2026-10-06, see docs/PHASE_7.md) to actually validate.
     gray = np.full((100, 100), 200, dtype=np.uint8)
-    gray[40:60, 40:60] = 40
+    gray[45:55, 45:55] = 40
     mask = np.zeros((100, 100), dtype=np.uint8)
-    mask[40:60, 40:60] = 255
+    mask[45:55, 45:55] = 255
 
     candidates = extract_candidates(mask, gray)
     filtered = filter_candidates(candidates, FilterConfig(min_area_px=1.0))

@@ -13,7 +13,7 @@ and reports an image-derived count with full parameter provenance.
 *candidate / detected feature*, never automatically a microorganism, colony,
 or CFU. See [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 
-## Current feature set (Phase 6)
+## Current feature set (Phase 7)
 
 - PySide6 desktop app skeleton, runs identically on Windows (dev) and
   Raspberry Pi OS (deploy).
@@ -83,10 +83,32 @@ or CFU. See [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
   validated spot's area (px²) and equivalent diameter (px), matching the
   "Validated Spots" overlay's numbering exactly.
 
-Not yet implemented (later phases — see `docs/PHASE_6.md` "Next Phase" and
+- **Analysis runs off the GUI thread** (`AnalysisWorker` in
+  `app/gui/main_window.py`): the original image and quality results
+  display immediately after import; preprocessing/detection/filtering run
+  in the background with an indeterminate progress bar, instead of
+  freezing the window — fixes a real reported ~1-1.5 minute UI freeze.
+- **Candidate-extraction performance fix**
+  (`app/image_engine/detection/candidate_extraction.py`): per-candidate
+  intensity/contrast features now compute on a small local crop instead of
+  a full-image-sized allocation per candidate — the dominant cost behind
+  the freeze above on real images with thousands of candidates.
+- **Oversized false-positive fix**: `FilterConfig.max_diameter_px` now
+  defaults to 20.0px (was unset) after a real lab image showed large,
+  roughly circular structures passing filtering on circularity/solidity
+  alone, with nothing gating the upper size bound. Still a generic
+  placeholder, not lab-calibrated — see `docs/PHASE_7.md`.
+- **Layout fixes**: quality and results panels are now side by side
+  (not stacked) in their own splitter, and no splitter in the window can
+  be dragged to a collapsed, unrecoverable state
+  (`setChildrenCollapsible(False)` + explicit minimum heights) — fixes a
+  reported bug where resizing could make the results panel disappear
+  entirely.
+
+Not yet implemented (later phases — see `docs/PHASE_7.md` "Next Phase" and
 the master spec): a controlled validation dataset workflow, in-app manual
 ground-truth annotation, ROI-based/calibrated physical measurement,
-database persistence, reporting, and everything past Phase 6 in the phase
+database persistence, reporting, and everything past Phase 7 in the phase
 list.
 
 ## Install & run

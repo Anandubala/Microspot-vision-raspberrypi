@@ -175,7 +175,18 @@ class FilterConfig(BaseModel):
     # N pixels across" terms — exactly how the lab assistant described
     # spot sizes (e.g. "2 pixels", "3 pixels" — diameter, not area).
     min_diameter_px: float | None = None
-    max_diameter_px: float | None = None
+    # Default changed from None (2026-10-06, real-lab-image feedback): a
+    # real lab image showed large, roughly circular structures (out-of-
+    # focus cells/debris/bubbles, tens to ~150px across) passing filtering
+    # cleanly, because circularity and solidity alone favor round shapes
+    # regardless of size — nothing was gating the upper end at all. 20.0
+    # is a deliberately generous placeholder (her example real spots were
+    # ~2-3px, so this leaves ~7-10x headroom) chosen to exclude the large
+    # blobs actually observed without risking real spots on the sizes
+    # described so far. It is NOT a calibrated value — see docs/PHASE_7.md
+    # "Known limitations": the real expected spot-size range is still an
+    # open question for the lab assistant.
+    max_diameter_px: float | None = 20.0
     min_circularity: float = 0.3  # 0-1; 1.0 is a perfect circle
     min_solidity: float = 0.5  # 0-1; area / convex-hull area
     max_aspect_ratio: float = 3.0  # >=1.0; long/short bbox side ratio

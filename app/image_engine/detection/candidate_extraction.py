@@ -62,10 +62,9 @@ def extract_candidates(
         solidity = _solidity(contour, area)
         edge_state = _edge_state(x, y, w, h, img_w, img_h)
 
-        blob_mask = np.zeros(mask.shape, dtype=np.uint8)
-        cv2.drawContours(blob_mask, [contour], -1, 255, thickness=cv2.FILLED)
-        mean_i, min_i, max_i = _intensity_stats(gray, blob_mask)
-        local_contrast = _local_contrast(gray, blob_mask, mean_i, config.local_contrast_ring_px)
+        mean_i, min_i, max_i, local_contrast = _local_intensity_features(
+            gray, contour, x, y, w, h, img_w, img_h, config.local_contrast_ring_px
+        )
 
         candidates.append(
             Candidate(
@@ -137,30 +136,55 @@ def _edge_state(x: int, y: int, w: int, h: int, img_w: int, img_h: int) -> EdgeS
     return EdgeState.PARTIAL if touches_edge else EdgeState.COMPLETE
 
 
-def _intensity_stats(gray: np.ndarray, blob_mask: np.ndarray) -> tuple[float, float, float]:
-    """Mean/min/max of `gray` within the filled candidate region."""
-    pixels = gray[blob_mask == 255]
-    if pixels.size == 0:
-        return 0.0, 0.0, 0.0
-    return float(pixels.mean()), float(pixels.min()), float(pixels.max())
+def _local_intensity_features(
+    gray: np.ndarray,
+    contour: np.ndarray,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    img_w: int,
+    img_h: int,
+    ring_px: int,
+) -> tuple[float, float, float, float]:
+    """Mean/min/max intensity inside the candidate, plus local_contrast
+    against a `ring_px`-wide ring just outside it — computed on a small
+    CROP around the candidate's bounding box, not the full image.
 
-
-def _local_contrast(
-    gray: np.ndarray, blob_mask: np.ndarray, inside_mean: float, ring_px: int
-) -> float:
-    """|mean intensity inside the blob - mean intensity in a `ring_px`-wide
-    ring immediately outside it|. A real, computed measure of how much the
-    candidate actually stands out from its immediate surroundings — not
-    the whole-image contrast (that's Phase 2's QualityMetrics.contrast_std).
-
-    Returns 0.0 if the ring has no pixels (e.g. a candidate that fills the
-    entire frame) rather than dividing by zero.
+    This is the performance-critical part of extraction. The original
+    Phase 5 implementation allocated a full-image-sized blank mask and ran
+    drawContours/dilate on it for EVERY candidate — fine for a handful of
+    candidates, but on a real microscope image with several thousand tiny
+    spots (confirmed: ~9,800 on a real lab image, ~1-1.5 minutes to
+    import) that's thousands of full-image-sized allocations, each one
+    mostly empty space the candidate never touches. Cropping to a small
+    padded region around just this candidate's bounding box turns an
+    O(candidates x image_area) cost into O(candidates x local_area), which
+    for small spots in a large image is a very large, measured speedup
+    (see docs/PHASE_7.md's before/after benchmark) — not a hypothetical
+    optimization.
     """
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * ring_px + 1, 2 * ring_px + 1))
-    dilated = cv2.dilate(blob_mask, kernel)
-    ring_mask = cv2.bitwise_and(dilated, cv2.bitwise_not(blob_mask))
+    pad = ring_px + 1
+    cx0, cy0 = max(0, x - pad), max(0, y - pad)
+    cx1, cy1 = min(img_w, x + w + pad), min(img_h, y + h + pad)
 
-    ring_pixels = gray[ring_mask == 255]
-    if ring_pixels.size == 0:
-        return 0.0
-    return float(abs(inside_mean - float(ring_pixels.mean())))
+    gray_crop = gray[cy0:cy1, cx0:cx1]
+    local_mask = np.zeros(gray_crop.shape, dtype=np.uint8)
+    shifted_contour = contour - np.array([cx0, cy0])
+    cv2.drawContours(local_mask, [shifted_contour], -1, 255, thickness=cv2.FILLED)
+
+    inside_pixels = gray_crop[local_mask == 255]
+    if inside_pixels.size == 0:
+        return 0.0, 0.0, 0.0, 0.0
+    mean_i = float(inside_pixels.mean())
+    min_i = float(inside_pixels.min())
+    max_i = float(inside_pixels.max())
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * ring_px + 1, 2 * ring_px + 1))
+    dilated = cv2.dilate(local_mask, kernel)
+    ring_mask = cv2.bitwise_and(dilated, cv2.bitwise_not(local_mask))
+    ring_pixels = gray_crop[ring_mask == 255]
+
+    local_contrast = float(abs(mean_i - float(ring_pixels.mean()))) if ring_pixels.size > 0 else 0.0
+
+    return mean_i, min_i, max_i, local_contrast

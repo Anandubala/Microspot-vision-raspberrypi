@@ -8,10 +8,16 @@ FIRST one it fails — matching the spec's "a candidate carries an explicit
 reason" (singular), not a list of every rule it happens to violate. The
 chosen order runs the cheapest, most decisive checks first (a tiny noise
 speck is almost always rejected on area alone, long before its
-circularity would even matter). Diameter checks are disabled by default
-(FilterConfig.min/max_diameter_px default to None) — area is the primary
-size gate; diameter is an additional, optional one for when a reviewer
-finds it more natural to reason in "this spot is N pixels across" terms.
+circularity would even matter).
+
+Diameter: `min_diameter_px` is disabled by default (None) — area is the
+primary lower-bound size gate, and min_diameter_px is an additional,
+optional one for when a reviewer finds it more natural to reason in
+"this spot is N pixels across" terms. `max_diameter_px` DOES default to
+a real value (20.0px, since 2026-10-06) — a real lab image showed large
+circular structures passing filtering because circularity/solidity alone
+favor round shapes regardless of size; nothing was gating the upper
+bound at all until then. See docs/PHASE_7.md.
 """
 from __future__ import annotations
 
